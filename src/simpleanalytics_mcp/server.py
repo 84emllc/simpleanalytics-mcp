@@ -1,6 +1,6 @@
 """SimpleAnalytics MCP server entry point."""
 
-from mcp.server.fastmcp import FastMCP
+from fastmcp import FastMCP
 
 from simpleanalytics_mcp.tools.websites import register_websites_tools
 

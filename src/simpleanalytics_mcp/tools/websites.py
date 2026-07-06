@@ -2,7 +2,7 @@
 
 from typing import Any
 
-from mcp.server.fastmcp import FastMCP
+from fastmcp import FastMCP
 
 from simpleanalytics_mcp.client import get_json
 

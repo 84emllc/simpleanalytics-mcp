@@ -2,13 +2,13 @@
 
 import httpx
 import respx
-from mcp.server.fastmcp import FastMCP
+from fastmcp import FastMCP
 
 from simpleanalytics_mcp.tools.websites import register_websites_tools
 
 
-def _get_tool(mcp: FastMCP, name: str):
-    return mcp._tool_manager._tools[name].fn
+async def _get_tool(mcp: FastMCP, name: str):
+    return (await mcp.get_tool(name)).fn
 
 
 @respx.mock
@@ -18,6 +18,6 @@ async def test_list_websites_calls_api() -> None:
     )
     mcp = FastMCP("test")
     register_websites_tools(mcp)
-    list_websites = _get_tool(mcp, "list_websites")
+    list_websites = await _get_tool(mcp, "list_websites")
     result = await list_websites()
     assert result == [{"hostname": "example.com"}]
