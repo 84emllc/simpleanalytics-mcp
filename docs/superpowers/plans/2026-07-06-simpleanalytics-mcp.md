@@ -628,8 +628,8 @@ from fastmcp import FastMCP
 from simpleanalytics_mcp.tools.websites import register_websites_tools
 
 
-def _get_tool(mcp: FastMCP, name: str):
-    return mcp._tool_manager._tools[name].fn
+async def _get_tool(mcp: FastMCP, name: str):
+    return (await mcp.get_tool(name)).fn
 
 
 @respx.mock
@@ -639,7 +639,7 @@ async def test_list_websites_calls_api() -> None:
     )
     mcp = FastMCP("test")
     register_websites_tools(mcp)
-    list_websites = _get_tool(mcp, "list_websites")
+    list_websites = await _get_tool(mcp, "list_websites")
     result = await list_websites()
     assert result == [{"hostname": "example.com"}]
 ```
@@ -696,9 +696,9 @@ And call it inside `create_server()`, immediately before `return mcp`:
 Append to `tests/test_server.py`:
 
 ```python
-def test_list_websites_registered() -> None:
+async def test_list_websites_registered() -> None:
     server = create_server()
-    assert "list_websites" in server._tool_manager._tools
+    assert await server.get_tool("list_websites") is not None
 ```
 
 - [ ] **Step 6: Run tests to verify they pass**
@@ -747,14 +747,14 @@ from fastmcp import FastMCP
 from simpleanalytics_mcp.tools.stats import register_stats_tools
 
 
-def _get_tool(mcp: FastMCP, name: str):
-    return mcp._tool_manager._tools[name].fn
+async def _get_tool(mcp: FastMCP, name: str):
+    return (await mcp.get_tool(name)).fn
 
 
-def _stats():
+async def _stats():
     mcp = FastMCP("test")
     register_stats_tools(mcp)
-    return _get_tool(mcp, "get_stats")
+    return await _get_tool(mcp, "get_stats")
 
 
 @respx.mock
@@ -762,7 +762,7 @@ async def test_get_stats_defaults() -> None:
     route = respx.get("https://simpleanalytics.com/example.com.json").mock(
         return_value=httpx.Response(200, json={"pageviews": 10, "visitors": 7})
     )
-    get_stats = _stats()
+    get_stats = await _stats()
     result = await get_stats(hostname="example.com")
     assert result == {"pageviews": 10, "visitors": 7}
     params = route.calls.last.request.url.params
@@ -776,7 +776,7 @@ async def test_get_stats_passes_filters_and_lists() -> None:
     route = respx.get("https://simpleanalytics.com/example.com.json").mock(
         return_value=httpx.Response(200, json={})
     )
-    get_stats = _stats()
+    get_stats = await _stats()
     await get_stats(
         hostname="example.com",
         fields=["pages", "referrers"],
@@ -806,7 +806,7 @@ async def test_get_stats_omits_unset_params() -> None:
     route = respx.get("https://simpleanalytics.com/example.com.json").mock(
         return_value=httpx.Response(200, json={})
     )
-    get_stats = _stats()
+    get_stats = await _stats()
     await get_stats(hostname="example.com")
     params = route.calls.last.request.url.params
     assert "country" not in params
@@ -936,9 +936,9 @@ And call it inside `create_server()`, before `return mcp` (alongside the website
 Append to `tests/test_server.py`:
 
 ```python
-def test_get_stats_registered() -> None:
+async def test_get_stats_registered() -> None:
     server = create_server()
-    assert "get_stats" in server._tool_manager._tools
+    assert await server.get_tool("get_stats") is not None
 ```
 
 - [ ] **Step 6: Run tests to verify they pass**
@@ -997,14 +997,14 @@ from fastmcp import FastMCP
 from simpleanalytics_mcp.tools.export import register_export_tools, write_export_file
 
 
-def _get_tool(mcp: FastMCP, name: str):
-    return mcp._tool_manager._tools[name].fn
+async def _get_tool(mcp: FastMCP, name: str):
+    return (await mcp.get_tool(name)).fn
 
 
-def _export():
+async def _export():
     mcp = FastMCP("test")
     register_export_tools(mcp)
-    return _get_tool(mcp, "export_datapoints")
+    return await _get_tool(mcp, "export_datapoints")
 
 
 def _rows(n: int) -> list[dict[str, str]]:
@@ -1016,7 +1016,7 @@ async def test_export_inline_when_small() -> None:
     route = respx.get("https://simpleanalytics.com/api/export/datapoints").mock(
         return_value=httpx.Response(200, json=_rows(3))
     )
-    export_datapoints = _export()
+    export_datapoints = await _export()
     result = await export_datapoints(
         hostname="example.com", start="2026-06-01", end="2026-06-30"
     )
@@ -1040,7 +1040,7 @@ async def test_export_writes_file_when_large(
     respx.get("https://simpleanalytics.com/api/export/datapoints").mock(
         return_value=httpx.Response(200, json=_rows(9))
     )
-    export_datapoints = _export()
+    export_datapoints = await _export()
     result = await export_datapoints(
         hostname="example.com", start="2026-06-01", end="2026-06-30"
     )
@@ -1055,7 +1055,7 @@ async def test_export_writes_file_when_large(
 
 
 async def test_export_rejects_mixed_hourly_range() -> None:
-    export_datapoints = _export()
+    export_datapoints = await _export()
     with pytest.raises(ValueError, match="both"):
         await export_datapoints(
             hostname="example.com", start="2026-06-24T09", end="2026-06-24"
@@ -1213,9 +1213,9 @@ And call it inside `create_server()`, before `return mcp`:
 Append to `tests/test_server.py`:
 
 ```python
-def test_export_datapoints_registered() -> None:
+async def test_export_datapoints_registered() -> None:
     server = create_server()
-    assert "export_datapoints" in server._tool_manager._tools
+    assert await server.get_tool("export_datapoints") is not None
 ```
 
 - [ ] **Step 6: Run tests to verify they pass**
