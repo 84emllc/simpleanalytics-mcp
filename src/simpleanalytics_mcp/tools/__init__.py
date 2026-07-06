@@ -1,0 +1,1 @@
+"""SimpleAnalytics MCP tools."""
