@@ -1,6 +1,8 @@
 """SimpleAnalytics MCP server entry point."""
 
-from fastmcp import FastMCP
+from mcp.server.fastmcp import FastMCP
+
+from simpleanalytics_mcp.tools.websites import register_websites_tools
 
 
 def create_server() -> FastMCP:
@@ -15,6 +17,8 @@ def create_server() -> FastMCP:
             "SA_USER_ID environment variables."
         ),
     )
+    register_websites_tools(mcp)
+
     return mcp
 
 
