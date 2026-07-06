@@ -13,3 +13,8 @@ def test_create_server_returns_fastmcp() -> None:
 async def test_list_websites_registered() -> None:
     server = create_server()
     assert await server.get_tool("list_websites") is not None
+
+
+async def test_get_stats_registered() -> None:
+    server = create_server()
+    assert await server.get_tool("get_stats") is not None
