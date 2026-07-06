@@ -18,3 +18,8 @@ async def test_list_websites_registered() -> None:
 async def test_get_stats_registered() -> None:
     server = create_server()
     assert await server.get_tool("get_stats") is not None
+
+
+async def test_export_datapoints_registered() -> None:
+    server = create_server()
+    assert await server.get_tool("export_datapoints") is not None

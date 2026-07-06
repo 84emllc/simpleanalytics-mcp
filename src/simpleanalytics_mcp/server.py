@@ -2,6 +2,7 @@
 
 from fastmcp import FastMCP
 
+from simpleanalytics_mcp.tools.export import register_export_tools
 from simpleanalytics_mcp.tools.stats import register_stats_tools
 from simpleanalytics_mcp.tools.websites import register_websites_tools
 
@@ -20,6 +21,7 @@ def create_server() -> FastMCP:
     )
     register_websites_tools(mcp)
     register_stats_tools(mcp)
+    register_export_tools(mcp)
 
     return mcp
 
