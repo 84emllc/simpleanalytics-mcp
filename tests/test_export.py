@@ -27,8 +27,11 @@ def _rows(n: int) -> list[dict[str, str]]:
 
 @respx.mock
 async def test_export_inline_when_small() -> None:
+    # Real API response shape: {"datapoints": [...], "meta": {...}}.
     route = respx.get("https://simpleanalytics.com/api/export/datapoints").mock(
-        return_value=httpx.Response(200, json=_rows(3))
+        return_value=httpx.Response(
+            200, json={"datapoints": _rows(3), "meta": {"amount": 3}}
+        )
     )
     export_datapoints = await _export()
     result = await export_datapoints(
@@ -52,7 +55,9 @@ async def test_export_writes_file_when_large(
     monkeypatch.setenv("SA_EXPORT_DIR", str(tmp_path))
     monkeypatch.setenv("SA_INLINE_ROW_LIMIT", "5")
     respx.get("https://simpleanalytics.com/api/export/datapoints").mock(
-        return_value=httpx.Response(200, json=_rows(9))
+        return_value=httpx.Response(
+            200, json={"datapoints": _rows(9), "meta": {"amount": 9}}
+        )
     )
     export_datapoints = await _export()
     result = await export_datapoints(
@@ -66,6 +71,20 @@ async def test_export_writes_file_when_large(
     lines = written.read_text(encoding="utf-8").strip().splitlines()
     assert len(lines) == 9
     assert json.loads(lines[0])["path"] == "/p0"
+
+
+@respx.mock
+async def test_export_handles_bare_list_response() -> None:
+    # Defensive fallback: treat a bare JSON array as the row list directly.
+    respx.get("https://simpleanalytics.com/api/export/datapoints").mock(
+        return_value=httpx.Response(200, json=_rows(3))
+    )
+    export_datapoints = await _export()
+    result = await export_datapoints(
+        hostname="example.com", start="2026-06-01", end="2026-06-30"
+    )
+    assert result["row_count"] == 3
+    assert len(result["rows"]) == 3
 
 
 async def test_export_rejects_mixed_hourly_range() -> None:

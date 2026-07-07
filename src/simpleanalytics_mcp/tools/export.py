@@ -88,7 +88,7 @@ def register_export_tools(mcp: FastMCP) -> None:
         if isinstance(data, list):
             rows = data
         elif isinstance(data, dict):
-            rows = data.get("data", [])
+            rows = data.get("datapoints", [])
         else:
             rows = []
 
