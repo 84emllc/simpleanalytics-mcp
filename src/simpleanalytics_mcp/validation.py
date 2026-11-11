@@ -1,10 +1,12 @@
 """Input validation helpers for SimpleAnalytics MCP tools."""
 
 import re
-from datetime import datetime
+from datetime import date, datetime, timedelta
 
 _DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 _HOUR_RE = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}$")
+_METADATA_KEY_RE = re.compile(r"^[A-Za-z0-9_]{1,100}$")
+_MAX_METADATA_KEYS = 20
 
 
 def validate_date(value: str, *, field: str) -> None:
@@ -58,3 +60,38 @@ def parse_fields(fields: list[str]) -> str:
     if not cleaned:
         raise ValueError("fields must contain at least one non-empty field name")
     return ",".join(cleaned)
+
+
+def metadata_params(metadata: dict[str, str]) -> dict[str, str]:
+    """Map metadata filters to Stats API query params (metadata.<key>=value)."""
+    if len(metadata) > _MAX_METADATA_KEYS:
+        raise ValueError(f"metadata accepts at most {_MAX_METADATA_KEYS} keys")
+    params: dict[str, str] = {}
+    for key, value in metadata.items():
+        if not _METADATA_KEY_RE.match(key):
+            raise ValueError(
+                f"metadata key must be letters, digits, or underscores, got {key!r}"
+            )
+        params[f"metadata.{key}"] = value
+    return params
+
+
+def parse_day_range(start: str, end: str) -> tuple[date, date]:
+    """Parse an inclusive YYYY-MM-DD range; placeholders and hours are rejected."""
+    if not (_DATE_RE.match(start) and _DATE_RE.match(end)):
+        raise ValueError("start and end must be YYYY-MM-DD dates, not placeholders")
+    validate_date(start, field="start")
+    validate_date(end, field="end")
+    start_d = datetime.strptime(start, "%Y-%m-%d").date()
+    end_d = datetime.strptime(end, "%Y-%m-%d").date()
+    if start_d > end_d:
+        raise ValueError(f"end {end} is before start {start}; end must be on or after start")
+    return start_d, end_d
+
+
+def previous_period(start: str, end: str) -> tuple[str, str]:
+    """Return the equal-length period that ends the day before start."""
+    start_d, end_d = parse_day_range(start, end)
+    prev_end = start_d - timedelta(days=1)
+    prev_start = prev_end - (end_d - start_d)
+    return prev_start.isoformat(), prev_end.isoformat()

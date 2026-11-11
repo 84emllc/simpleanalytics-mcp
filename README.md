@@ -6,10 +6,9 @@ including joining traffic data with Google Search Console and other sources.
 
 ## Tools
 
-- **`get_stats`** — dashboard-accurate aggregates from the Stats API: pageviews,
-  visitors, histogram, top pages, countries, referrers, all UTM breakdowns,
-  browser/OS/device splits, seconds on page, and event counts. Supports filters
-  (page, country, UTM, device, etc.) with trailing-`*` wildcards.
+- **`get_stats`** — dashboard-accurate aggregates from the Stats API: pageviews, visitors, histogram, top pages, countries, referrers, all UTM breakdowns, browser/OS/device splits, seconds on page, and event counts (`events=["*"]` for every event). Supports filters (page, country, UTM, device, etc.) with trailing-`*` wildcards, metadata filters, and `compare` for the equal-length previous period with percent change.
+- **`get_event_histogram`** — one event counted per hour, day, week, month, or year, built from an events export. Supports the same filters as `get_stats` except metadata.
+- **`get_recent_hits`** — page views and events from the last 60 minutes, newest first, including robots by default. Useful for checking that tracking works.
 - **`export_datapoints`** — raw datapoints (one row per page view or event) from
   the Export API. Small results return inline; large results are written to a
   newline-delimited JSON file and summarized.
