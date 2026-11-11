@@ -4,7 +4,9 @@ import pytest
 
 from simpleanalytics_mcp.validation import (
     is_hourly,
+    metadata_params,
     parse_fields,
+    previous_period,
     validate_date,
     validate_export_range,
 )
@@ -69,3 +71,38 @@ def test_parse_fields_allows_undocumented_and_metadata() -> None:
 def test_parse_fields_rejects_all_empty() -> None:
     with pytest.raises(ValueError, match="at least one"):
         parse_fields([" ", ""])
+
+
+def test_metadata_params_prefixes_keys() -> None:
+    assert metadata_params({"plan": "pro", "tier_2": "x"}) == {
+        "metadata.plan": "pro",
+        "metadata.tier_2": "x",
+    }
+
+
+def test_metadata_params_rejects_bad_key() -> None:
+    with pytest.raises(ValueError, match="metadata key"):
+        metadata_params({"plan.x": "pro"})
+
+
+def test_metadata_params_rejects_too_many_keys() -> None:
+    with pytest.raises(ValueError, match="at most 20"):
+        metadata_params({f"k{i}": "v" for i in range(21)})
+
+
+def test_previous_period_same_length_ending_day_before() -> None:
+    assert previous_period("2026-10-13", "2026-11-11") == ("2026-09-13", "2026-10-12")
+
+
+def test_previous_period_single_day() -> None:
+    assert previous_period("2026-11-11", "2026-11-11") == ("2026-11-10", "2026-11-10")
+
+
+def test_previous_period_rejects_placeholders() -> None:
+    with pytest.raises(ValueError, match="YYYY-MM-DD"):
+        previous_period("today-30d", "today")
+
+
+def test_previous_period_rejects_reversed_range() -> None:
+    with pytest.raises(ValueError, match="after"):
+        previous_period("2026-11-11", "2026-11-01")

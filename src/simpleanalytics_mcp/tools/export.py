@@ -43,6 +43,37 @@ def write_export_file(
     return path
 
 
+async def fetch_datapoints(
+    hostname: str,
+    start: str,
+    end: str,
+    fields: list[str],
+    *,
+    type: str = "pageviews",
+    robots: bool = False,
+    timezone: str | None = None,
+) -> list[Any]:
+    """Fetch raw datapoints from the Export API and return them as a list of rows."""
+    validate_export_range(start, end)
+    params: dict[str, Any] = {
+        "format": "json",
+        "hostname": hostname,
+        "start": start,
+        "end": end,
+        "fields": parse_fields(fields),
+        "robots": str(robots).lower(),
+        "type": type,
+        "timezone": timezone or default_timezone(),
+    }
+    data = await get_json("/api/export/datapoints", params, need_user_id=True)
+    if isinstance(data, list):
+        return data
+    if isinstance(data, dict):
+        rows = data.get("datapoints", [])
+        return rows if isinstance(rows, list) else []
+    return []
+
+
 def register_export_tools(mcp: FastMCP) -> None:
     """Register the Export API tool with the MCP server."""
 
@@ -71,26 +102,16 @@ def register_export_tools(mcp: FastMCP) -> None:
         under "rows". Larger results are written to a newline-delimited JSON file
         and the response returns row_count, file_path, and a sample_head.
         """
-        validate_export_range(start, end)
         field_list = fields if fields else list(_DEFAULT_FIELDS)
-        params: dict[str, Any] = {
-            "format": "json",
-            "hostname": hostname,
-            "start": start,
-            "end": end,
-            "fields": parse_fields(field_list),
-            "robots": str(robots).lower(),
-            "type": type,
-            "timezone": timezone or default_timezone(),
-        }
-
-        data = await get_json("/api/export/datapoints", params, need_user_id=True)
-        if isinstance(data, list):
-            rows = data
-        elif isinstance(data, dict):
-            rows = data.get("datapoints", [])
-        else:
-            rows = []
+        rows = await fetch_datapoints(
+            hostname,
+            start,
+            end,
+            field_list,
+            type=type,
+            robots=robots,
+            timezone=timezone,
+        )
 
         row_count = len(rows)
         if row_count <= _inline_limit():
